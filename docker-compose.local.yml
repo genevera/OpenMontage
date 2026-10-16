@@ -1,0 +1,41 @@
+# OpenMontage — durable local-only override.
+#
+# Usage: docker compose -f docker-compose.yml -f docker-compose.local.yml --profile gpu up -d --build app-gpu
+#
+# Blanks every remote/cloud credential so the container cannot reach cloud
+# providers even when .env carries live keys. Contains NO secrets — only
+# empty values. Deliberately kept:
+# - HF_TOKEN (gated model-weight downloads for LOCAL inference, not an API)
+# - VIDEO_GEN_LOCAL_* (local engine selection, read from .env)
+# - DOUBAO_SPEECH_VOICE_TYPE (harmless voice-id config, not a credential)
+services:
+  app:
+    environment:
+      FAL_KEY: ""
+      GOOGLE_API_KEY: ""
+      ELEVENLABS_API_KEY: ""
+      OPENAI_API_KEY: ""
+      XAI_API_KEY: ""
+      DOUBAO_SPEECH_API_KEY: ""
+      SUNO_API_KEY: ""
+      HEYGEN_API_KEY: ""
+      RUNWAY_API_KEY: ""
+      MODAL_LTX2_ENDPOINT_URL: ""
+      PEXELS_API_KEY: ""
+      PIXABAY_API_KEY: ""
+      UNSPLASH_ACCESS_KEY: ""
+  app-gpu:
+    environment:
+      FAL_KEY: ""
+      GOOGLE_API_KEY: ""
+      ELEVENLABS_API_KEY: ""
+      OPENAI_API_KEY: ""
+      XAI_API_KEY: ""
+      DOUBAO_SPEECH_API_KEY: ""
+      SUNO_API_KEY: ""
+      HEYGEN_API_KEY: ""
+      RUNWAY_API_KEY: ""
+      MODAL_LTX2_ENDPOINT_URL: ""
+      PEXELS_API_KEY: ""
+      PIXABAY_API_KEY: ""
+      UNSPLASH_ACCESS_KEY: ""
