@@ -1,0 +1,91 @@
+# OpenMontage — local deployment (Backlot server on :4750).
+#
+# Conventions follow Docker Compose docs via Context7:
+# - `env_file` long form with `required: false` so zero-key demo builds
+#   work without a `.env` present.
+# - bind mounts in long syntax; healthcheck with start_period.
+
+services:
+  app:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    image: openmontage:latest
+    init: true
+    restart: unless-stopped
+    env_file:
+      - path: .env
+        required: false
+    environment:
+      BACKLOT_PORT: "4750"
+    ports:
+      - "4750:4750"
+    volumes:
+      - type: bind
+        source: ./projects
+        target: /app/projects
+        bind:
+          create_host_path: true
+      - type: bind
+        source: ./output
+        target: /app/output
+        bind:
+          create_host_path: true
+      - type: bind
+        source: ./music_library
+        target: /app/music_library
+        read_only: true
+        bind:
+          create_host_path: true
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://127.0.0.1:4750/api/health', timeout=5)"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 20s
+      start_interval: 2s
+
+  # GPU runtime for local video generation (wan/hunyuan/ltx2/cogvideo via
+  # VIDEO_GEN_LOCAL_*). Opt-in only: `docker compose --profile gpu up`.
+  app-gpu:
+    profiles: ["gpu"]
+    build:
+      context: .
+      dockerfile: Dockerfile.gpu
+    image: openmontage:gpu
+    init: true
+    restart: unless-stopped
+    gpus: all
+    env_file:
+      - path: .env
+        required: false
+    environment:
+      BACKLOT_PORT: "4750"
+      VIDEO_GEN_LOCAL_ENABLED: "${VIDEO_GEN_LOCAL_ENABLED:-1}"
+      VIDEO_GEN_LOCAL_MODEL: "${VIDEO_GEN_LOCAL_MODEL:-}"
+    ports:
+      - "4750:4750"
+    volumes:
+      - type: bind
+        source: ./projects
+        target: /app/projects
+        bind:
+          create_host_path: true
+      - type: bind
+        source: ./output
+        target: /app/output
+        bind:
+          create_host_path: true
+      - type: bind
+        source: ./music_library
+        target: /app/music_library
+        read_only: true
+        bind:
+          create_host_path: true
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://127.0.0.1:4750/api/health', timeout=5)"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 20s
+      start_interval: 2s

@@ -1,0 +1,76 @@
+# syntax=docker/dockerfile:1
+
+# OpenMontage — GPU runtime for LOCAL video generation.
+#
+# CUDA runtime base + Python 3.10 + ffmpeg + Node 22, then the same
+# layer-caching layout as the CPU Dockerfile plus requirements-gpu.txt
+# (torch / torchaudio / torchvision) and `diffusers transformers accelerate`
+# per `make install-gpu`. Selected via Compose `--profile gpu`; the CPU
+# image stays the default.
+
+FROM nvidia/cuda:12.8.1-cudnn-runtime-ubuntu22.04 AS final
+
+ENV PYTHONDONTWRITEBYTECODE=1 \
+    PYTHONUNBUFFERED=1 \
+    PIP_NO_CACHE_DIR=0 \
+    BACKLOT_PORT=4750 \
+    VIDEO_GEN_LOCAL_ENABLED=1
+
+WORKDIR /app
+
+RUN apt-get update && apt-get install -y --no-install-recommends \
+        ca-certificates \
+        curl \
+        ffmpeg \
+        gnupg \
+        python3.10 \
+        python3.10-venv \
+        python3-pip \
+    && ln -sf /usr/bin/python3.10 /usr/bin/python \
+    && mkdir -p /etc/apt/keyrings \
+    && curl -fsSL https://deb.nodesource.com/gpgkey/nodesource-repo.gpg.key \
+        | gpg --dearmor -o /etc/apt/keyrings/nodesource.gpg \
+    && echo "deb [signed-by=/etc/apt/keyrings/nodesource.gpg] https://deb.nodesource.com/node_22.x nodistro main" \
+        > /etc/apt/sources.list.d/nodesource.list \
+    && apt-get update && apt-get install -y --no-install-recommends nodejs \
+    && node --version \
+    && ffmpeg -version | head -1 \
+    && apt-get clean \
+    && rm -rf /var/lib/apt/lists/*
+
+# Python deps first (cache-friendly layer).
+COPY requirements.txt requirements-gpu.txt ./
+RUN --mount=type=cache,target=/root/.cache/pip \
+    pip install --upgrade pip \
+    && pip install -r requirements.txt \
+    && pip install -r requirements-gpu.txt \
+    && pip install diffusers transformers accelerate
+
+# Remotion composer deps first, then source.
+COPY remotion-composer/package.json remotion-composer/package-lock.json* ./remotion-composer/
+RUN --mount=type=cache,target=/root/.npm \
+    sh -c 'cd remotion-composer && (npm ci || npm install)'
+
+COPY . .
+
+RUN (npx --yes hyperframes --version || echo "[skip] hyperframes cache-warm failed") || true
+
+ARG UID=10001
+RUN adduser \
+        --disabled-password \
+        --gecos "" \
+        --home "/home/appuser" \
+        --shell "/bin/bash" \
+        --uid "${UID}" \
+        appuser \
+    && mkdir -p /app/projects /app/output /app/music_library /app/.backlot \
+    && chown -R appuser:appuser /app /home/appuser
+USER appuser
+
+EXPOSE 4750
+
+HEALTHCHECK --interval=30s --timeout=5s --start-period=20s --retries=3 \
+    CMD python -c "import urllib.request; urllib.request.urlopen('http://127.0.0.1:4750/api/health', timeout=5)"
+
+ENTRYPOINT ["docker/entrypoint.sh"]
+CMD ["python", "-m", "backlot", "serve", "--port", "4750"]
