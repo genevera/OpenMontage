@@ -180,6 +180,15 @@ class TestGpuVariant:
         cfg = _compose()
         assert "gpus" not in cfg["services"]["app"]
 
+    def test_services_bind_all_interfaces(self):
+        # Regression: Backlot defaults to 127.0.0.1, which is unreachable
+        # from outside the container netns (host gets 502 via Caddy).
+        cfg = _compose()
+        for name in ("app", "app-gpu"):
+            cmd = cfg["services"][name].get("command", [])
+            flat = " ".join(str(v) for v in cmd)
+            assert "0.0.0.0" in flat, f"{name} must bind 0.0.0.0"
+
 
 class TestSupportFiles:
     def test_dockerignore_exists_and_excludes_env(self):

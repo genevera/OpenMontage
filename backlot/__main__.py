@@ -27,9 +27,17 @@ def _port() -> int:
         return DEFAULT_PORT
 
 
+def _host() -> str:
+    # Bind loopback by default; containers override with --host 0.0.0.0
+    # (or BACKLOT_HOST) since 127.0.0.1 inside a netns is unreachable.
+    return os.environ.get("BACKLOT_HOST", "127.0.0.1")
+
+
 def _server_alive(port: int) -> bool:
     try:
-        with urllib.request.urlopen(f"http://127.0.0.1:{port}/api/health", timeout=1.5) as resp:
+        with urllib.request.urlopen(
+            f"http://127.0.0.1:{port}/api/health", timeout=1.5
+        ) as resp:
             return resp.status == 200
     except Exception:
         return False
@@ -44,8 +52,8 @@ def _spawn_server(port: int) -> None:
         "stdin": subprocess.DEVNULL,
     }
     if os.name == "nt":
-        kwargs["creationflags"] = (
-            subprocess.CREATE_NEW_PROCESS_GROUP | getattr(subprocess, "DETACHED_PROCESS", 0x00000008)
+        kwargs["creationflags"] = subprocess.CREATE_NEW_PROCESS_GROUP | getattr(
+            subprocess, "DETACHED_PROCESS", 0x00000008
         )
     else:
         kwargs["start_new_session"] = True
@@ -58,7 +66,9 @@ def cmd_open(project_id: str | None) -> int:
         try:
             _spawn_server(port)
         except Exception as exc:
-            print(f"backlot: could not start server ({exc}) — continuing without the board")
+            print(
+                f"backlot: could not start server ({exc}) — continuing without the board"
+            )
             return 1
         deadline = time.time() + 15
         while time.time() < deadline:
@@ -66,7 +76,9 @@ def cmd_open(project_id: str | None) -> int:
                 break
             time.sleep(0.4)
         else:
-            print("backlot: server did not come up in time — continuing without the board")
+            print(
+                "backlot: server did not come up in time — continuing without the board"
+            )
             return 1
     url = f"http://127.0.0.1:{port}/"
     if project_id:
@@ -79,10 +91,10 @@ def cmd_open(project_id: str | None) -> int:
     return 0
 
 
-def cmd_serve(port: int) -> int:
+def cmd_serve(port: int, host: str) -> int:
     import uvicorn
 
-    uvicorn.run("backlot.server:app", host="127.0.0.1", port=port, log_level="warning")
+    uvicorn.run("backlot.server:app", host=host, port=port, log_level="warning")
     return 0
 
 
@@ -90,17 +102,20 @@ def main(argv: list[str] | None = None) -> int:
     parser = argparse.ArgumentParser(prog="backlot", description=__doc__)
     sub = parser.add_subparsers(dest="command")
 
-    p_open = sub.add_parser("open", help="open the board in the browser (starts server if needed)")
+    p_open = sub.add_parser(
+        "open", help="open the board in the browser (starts server if needed)"
+    )
     p_open.add_argument("project_id", nargs="?", default=None)
 
     p_serve = sub.add_parser("serve", help="run the Backlot server in the foreground")
     p_serve.add_argument("--port", type=int, default=_port())
+    p_serve.add_argument("--host", default=_host())
 
     args = parser.parse_args(argv)
     if args.command == "open":
         return cmd_open(args.project_id)
     if args.command == "serve":
-        return cmd_serve(args.port)
+        return cmd_serve(args.port, args.host)
     parser.print_help()
     return 2
 

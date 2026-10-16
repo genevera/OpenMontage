@@ -13,6 +13,9 @@ services:
     image: openmontage:latest
     init: true
     restart: unless-stopped
+    # Bind all interfaces: 127.0.0.1 inside the container netns is
+    # unreachable from the host/Caddy (Backlot defaults to loopback).
+    command: ["python", "-m", "backlot", "serve", "--port", "4750", "--host", "0.0.0.0"]
     env_file:
       - path: .env
         required: false
@@ -56,6 +59,9 @@ services:
     init: true
     restart: unless-stopped
     gpus: all
+    # Bind all interfaces: 127.0.0.1 inside the container netns is
+    # unreachable from the host/Caddy (Backlot defaults to loopback).
+    command: ["python", "-m", "backlot", "serve", "--port", "4750", "--host", "0.0.0.0"]
     env_file:
       - path: .env
         required: false
