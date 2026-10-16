@@ -199,6 +199,28 @@ That's it. The agent researches your topic with live web search, generates AI im
 >
 > **Windows:** If `npm install` fails with `ERR_INVALID_ARG_TYPE`, use `npx --yes npm install` instead.
 
+### Run in Docker
+
+Prefer containers over a local toolchain? Two images are provided:
+
+```bash
+# CPU (Backlot board + cloud providers) on :4750
+docker compose up -d --build app
+
+# GPU (local video generation: wan/hunyuan/ltx2/cogvideo) on :4750
+docker compose --profile gpu up -d --build app-gpu
+```
+
+The GPU image ships a CUDA 12.8 runtime with the same `cu128` torch wheels the host `make install-gpu` flow uses; it needs the [NVIDIA Container Toolkit](https://docs.nvidia.com/datacenter/cloud-native/container-toolkit/latest/install-guide.html) on the host. Both services serve the Backlot board at `http://localhost:4750` and persist work via bind mounts (`./projects`, `./output`, `./music_library`).
+
+For a fully local run (no cloud calls even if `.env` holds keys), add the override, which blanks remote credentials while keeping `HF_TOKEN` (gated weight downloads) and `VIDEO_GEN_LOCAL_*`:
+
+```bash
+docker compose -f docker-compose.yml -f docker-compose.local.yml --profile gpu up -d --build app-gpu
+```
+
+See [`docs/docker.md`](docs/docker.md) for the full deployment reference.
+
 ### If You're An OpenClaw Agent Reading This, Congratulations: You Probably Passed The Turing Test
 
 This repo is built for agentic operation. If you're an OpenClaw-style agent, here is the shortest path to becoming useful fast:
