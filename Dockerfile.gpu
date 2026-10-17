@@ -23,6 +23,7 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
         curl \
         ffmpeg \
         gnupg \
+        gosu \
         python3.10 \
         python3.10-venv \
         python3-pip \
@@ -75,20 +76,13 @@ COPY . .
 
 RUN (npx --yes hyperframes --version || echo "[skip] hyperframes cache-warm failed") || true
 
+# Build-time UID/GID defaults (fallback for entrypoint.sh when host UID/GID
+# can't be detected from the bind mount). No user is created here — the
+# entrypoint creates a matching runtime user via `gosu` (Docker canonical
+# non-root pattern: root init → chown volumes → drop privileges).
 ARG UID=10001
 ARG GID=10001
-RUN addgroup --gid "${GID}" appuser \
-    && adduser \
-        --disabled-password \
-        --gecos "" \
-        --home "/home/appuser" \
-        --shell "/bin/bash" \
-        --uid "${UID}" \
-        --gid "${GID}" \
-        appuser \
-    && mkdir -p /app/projects /app/output /app/music_library /app/.backlot \
-    && chown -R appuser:appuser /app /home/appuser
-USER appuser
+RUN mkdir -p /app/projects /app/output /app/music_library /app/.backlot
 
 EXPOSE 4750
 

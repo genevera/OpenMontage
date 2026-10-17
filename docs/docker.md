@@ -11,8 +11,12 @@ board on port 4750 and persist work through bind mounts.
 | `Dockerfile.gpu`    | `nvidia/cuda:12.8.1-cudnn-runtime-ubuntu22.04` + torch `cu128` | Local video generation (wan/hunyuan/ltx2/cogvideo) |
 
 The GPU base tracks the same CUDA 12.8 torch wheels the host
-`make install-gpu` flow installs. Both images run as a non-root `appuser`
-with a writable home directory.
+`make install-gpu` flow installs. Both images run as a non-root user matching
+the host user's UID/GID. The entrypoint (`docker/entrypoint.sh`) starts as
+root, chowns bind-mounted volume dirs to the host user, creates a matching
+`/etc/passwd` entry, then drops privileges with `gosu` (Docker's canonical
+non-root pattern). Build-time `UID`/`GID` args default to `10001` and serve
+as fallback when UID/GID can't be detected.
 
 ## Services (`docker-compose.yml`)
 
@@ -53,10 +57,12 @@ docker compose --profile gpu up -d --build app-gpu
 
 ## Configuration
 
-- The container runs as your host user's UID/GID (auto-detected by the
-  Makefile via `id -u` / `id -g`). Files written to `./projects`, `./output`,
-  and `./music_library` are owned by your user — no root or mismatched-UID
-  files. Override with `make docker-up UID=1234 GID=1234` if needed.
+- The container runs as your host user's UID/GID. The entrypoint auto-detects
+  them from the bind-mounted `./projects` directory (or falls back to
+  `UID`/`GID` passed to the Makefile, defaulting to `10001`). Files written to
+  `./projects`, `./output`, and `./music_library` are owned by your user — no
+  root or mismatched-UID files. Override with `make docker-up UID=1234 GID=1234`
+  if needed.
 - `BACKLOT_PORT` (default `4750`) sets the served port.
 - `.env` is picked up automatically when present (`required: false`, so a
   keyless checkout still works). Every key is optional.

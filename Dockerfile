@@ -25,6 +25,7 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
         curl \
         ffmpeg \
         gnupg \
+        gosu \
     && mkdir -p /etc/apt/keyrings \
     && curl -fsSL https://deb.nodesource.com/gpgkey/nodesource-repo.gpg.key \
         | gpg --dearmor -o /etc/apt/keyrings/nodesource.gpg \
@@ -54,22 +55,13 @@ COPY . .
 RUN (npx --yes hyperframes --version || echo "[skip] hyperframes cache-warm failed") \
     && python -c "from tools.video.hyperframes_compose import HyperFramesCompose; print(HyperFramesCompose().execute({'operation':'doctor'}).data)" || true
 
-# Non-privileged runtime user (Docker best practice: don't run as root).
-# UID/GID overridable at build time so volume files match the host user.
+# Build-time UID/GID defaults (fallback for entrypoint.sh when host UID/GID
+# can't be detected from the bind mount). No user is created here — the
+# entrypoint creates a matching runtime user via `gosu` (Docker canonical
+# non-root pattern: root init → chown volumes → drop privileges).
 ARG UID=10001
 ARG GID=10001
-RUN addgroup --gid "${GID}" appuser \
-    && adduser \
-        --disabled-password \
-        --gecos "" \
-        --home "/home/appuser" \
-        --shell "/bin/bash" \
-        --uid "${UID}" \
-        --gid "${GID}" \
-        appuser \
-    && mkdir -p /app/projects /app/output /app/music_library /app/.backlot \
-    && chown -R appuser:appuser /app /home/appuser
-USER appuser
+RUN mkdir -p /app/projects /app/output /app/music_library /app/.backlot
 
 EXPOSE 4750
 
