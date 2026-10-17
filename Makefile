@@ -144,10 +144,12 @@ docker-build-gpu:
 	docker build -f Dockerfile.gpu --build-arg UID=$(UID) --build-arg GID=$(GID) -t $(DOCKER_IMAGE_NAME):gpu .
 
 docker-up:
-	docker compose up -d --build
+	docker compose build --build-arg UID=$(UID) --build-arg GID=$(GID)
+	docker compose up -d
 
 docker-up-gpu:
-	docker compose --profile gpu up -d --build app-gpu
+	docker compose --profile gpu build --build-arg UID=$(UID) --build-arg GID=$(GID) app-gpu
+	docker compose --profile gpu up -d app-gpu
 
 docker-down:
 	docker compose down
