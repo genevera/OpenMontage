@@ -6,7 +6,11 @@ PIP = $(RUN_PYTHON) -m pip
 
 .DEFAULT_GOAL := setup
 
-.PHONY: setup install install-dev install-gpu test test-contracts lint clean preflight demo demo-list hyperframes-doctor hyperframes-warm venv ensure-venv
+# ---- Docker config (override on the command line if needed) ----
+DOCKER_IMAGE_NAME ?= openmontage
+DOCKER_IMAGE_TAG  ?= latest
+
+.PHONY: setup install install-dev install-gpu test test-contracts lint clean preflight demo demo-list hyperframes-doctor hyperframes-warm venv ensure-venv docker-build docker-build-gpu docker-up docker-up-gpu docker-down docker-logs docker-clean
 
 # ---- Virtual environment ----
 
@@ -127,3 +131,26 @@ lint: ensure-venv
 
 clean:
 	$(BASE_PYTHON) -c "import pathlib, shutil; excluded=[pathlib.Path('$(VENV_DIR)'), pathlib.Path('venv')]; skip=lambda p: any(p == root or root in p.parents for root in excluded); roots=[p for p in pathlib.Path('.').rglob('__pycache__') if not skip(p)]; [shutil.rmtree(p) for p in roots]; files=[p for p in pathlib.Path('.').rglob('*.pyc') if not skip(p)]; [p.unlink() for p in files]"
+
+# ---- Docker ----
+
+docker-build:
+	docker build -t $(DOCKER_IMAGE_NAME):$(DOCKER_IMAGE_TAG) .
+
+docker-build-gpu:
+	docker build -f Dockerfile.gpu -t $(DOCKER_IMAGE_NAME):gpu .
+
+docker-up:
+	docker compose up -d --build
+
+docker-up-gpu:
+	docker compose --profile gpu up -d --build app-gpu
+
+docker-down:
+	docker compose down
+
+docker-logs:
+	docker compose logs -f
+
+docker-clean:
+	docker compose down --rmi all --volumes

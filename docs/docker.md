@@ -21,6 +21,22 @@ with a writable home directory.
 | `app`     | default | no  | Board + cloud providers          |
 | `app-gpu` | `gpu`   | yes (`gpus: all`) | Board + local GPU generation |
 
+## Makefile targets
+
+All Docker operations are available as `make` targets:
+
+| Target             | Action                                          |
+|--------------------|-------------------------------------------------|
+| `docker-build`     | Build the CPU image (`openmontage:latest`)      |
+| `docker-build-gpu` | Build the GPU image (`openmontage:gpu`)         |
+| `docker-up`        | Start the CPU service (detached, with build)    |
+| `docker-up-gpu`    | Start the GPU service (detached, with build)    |
+| `docker-down`      | Stop and remove containers                      |
+| `docker-logs`      | Tail container logs                             |
+| `docker-clean`     | Stop containers and remove images + volumes     |
+
+Equivalent to the raw compose commands:
+
 ```bash
 # CPU
 docker compose up -d --build app
