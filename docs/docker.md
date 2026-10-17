@@ -53,6 +53,10 @@ docker compose --profile gpu up -d --build app-gpu
 
 ## Configuration
 
+- The container runs as your host user's UID/GID (auto-detected by the
+  Makefile via `id -u` / `id -g`). Files written to `./projects`, `./output`,
+  and `./music_library` are owned by your user — no root or mismatched-UID
+  files. Override with `make docker-up UID=1234 GID=1234` if needed.
 - `BACKLOT_PORT` (default `4750`) sets the served port.
 - `.env` is picked up automatically when present (`required: false`, so a
   keyless checkout still works). Every key is optional.

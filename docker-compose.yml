@@ -10,9 +10,13 @@ services:
     build:
       context: .
       dockerfile: Dockerfile
+      args:
+        UID: ${UID:-10001}
+        GID: ${GID:-10001}
     image: openmontage:latest
     init: true
     restart: unless-stopped
+    user: "${UID:-10001}:${GID:-10001}"
     # Bind all interfaces: 127.0.0.1 inside the container netns is
     # unreachable from the host/Caddy (Backlot defaults to loopback).
     command: ["python", "-m", "backlot", "serve", "--port", "4750", "--host", "0.0.0.0"]
@@ -21,6 +25,7 @@ services:
         required: false
     environment:
       BACKLOT_PORT: "4750"
+      HOME: "/tmp"
     ports:
       - "4750:4750"
     volumes:
@@ -55,10 +60,14 @@ services:
     build:
       context: .
       dockerfile: Dockerfile.gpu
+      args:
+        UID: ${UID:-10001}
+        GID: ${GID:-10001}
     image: openmontage:gpu
     init: true
     restart: unless-stopped
     gpus: all
+    user: "${UID:-10001}:${GID:-10001}"
     # Bind all interfaces: 127.0.0.1 inside the container netns is
     # unreachable from the host/Caddy (Backlot defaults to loopback).
     command: ["python", "-m", "backlot", "serve", "--port", "4750", "--host", "0.0.0.0"]
@@ -69,6 +78,7 @@ services:
       BACKLOT_PORT: "4750"
       VIDEO_GEN_LOCAL_ENABLED: "${VIDEO_GEN_LOCAL_ENABLED:-1}"
       VIDEO_GEN_LOCAL_MODEL: "${VIDEO_GEN_LOCAL_MODEL:-}"
+      HOME: "/tmp"
     ports:
       - "4750:4750"
     volumes:

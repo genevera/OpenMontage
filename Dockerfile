@@ -55,16 +55,17 @@ RUN (npx --yes hyperframes --version || echo "[skip] hyperframes cache-warm fail
     && python -c "from tools.video.hyperframes_compose import HyperFramesCompose; print(HyperFramesCompose().execute({'operation':'doctor'}).data)" || true
 
 # Non-privileged runtime user (Docker best practice: don't run as root).
-# appuser gets a real writable home: tooling running as appuser (pip cache,
-# npm/npx cache, huggingface_hub) needs $HOME to be writable; "/nonexistent"
-# breaks all of them (pip dies with Errno 13).
+# UID/GID overridable at build time so volume files match the host user.
 ARG UID=10001
-RUN adduser \
+ARG GID=10001
+RUN addgroup --gid "${GID}" appuser \
+    && adduser \
         --disabled-password \
         --gecos "" \
         --home "/home/appuser" \
         --shell "/bin/bash" \
         --uid "${UID}" \
+        --gid "${GID}" \
         appuser \
     && mkdir -p /app/projects /app/output /app/music_library /app/.backlot \
     && chown -R appuser:appuser /app /home/appuser

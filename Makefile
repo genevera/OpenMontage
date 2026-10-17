@@ -9,6 +9,9 @@ PIP = $(RUN_PYTHON) -m pip
 # ---- Docker config (override on the command line if needed) ----
 DOCKER_IMAGE_NAME ?= openmontage
 DOCKER_IMAGE_TAG  ?= latest
+UID ?= $(shell id -u)
+GID ?= $(shell id -g)
+export UID GID
 
 .PHONY: setup install install-dev install-gpu test test-contracts lint clean preflight demo demo-list hyperframes-doctor hyperframes-warm venv ensure-venv docker-build docker-build-gpu docker-up docker-up-gpu docker-down docker-logs docker-clean
 
@@ -135,10 +138,10 @@ clean:
 # ---- Docker ----
 
 docker-build:
-	docker build -t $(DOCKER_IMAGE_NAME):$(DOCKER_IMAGE_TAG) .
+	docker build --build-arg UID=$(UID) --build-arg GID=$(GID) -t $(DOCKER_IMAGE_NAME):$(DOCKER_IMAGE_TAG) .
 
 docker-build-gpu:
-	docker build -f Dockerfile.gpu -t $(DOCKER_IMAGE_NAME):gpu .
+	docker build -f Dockerfile.gpu --build-arg UID=$(UID) --build-arg GID=$(GID) -t $(DOCKER_IMAGE_NAME):gpu .
 
 docker-up:
 	docker compose up -d --build

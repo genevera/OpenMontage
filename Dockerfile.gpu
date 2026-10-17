@@ -76,12 +76,15 @@ COPY . .
 RUN (npx --yes hyperframes --version || echo "[skip] hyperframes cache-warm failed") || true
 
 ARG UID=10001
-RUN adduser \
+ARG GID=10001
+RUN addgroup --gid "${GID}" appuser \
+    && adduser \
         --disabled-password \
         --gecos "" \
         --home "/home/appuser" \
         --shell "/bin/bash" \
         --uid "${UID}" \
+        --gid "${GID}" \
         appuser \
     && mkdir -p /app/projects /app/output /app/music_library /app/.backlot \
     && chown -R appuser:appuser /app /home/appuser
