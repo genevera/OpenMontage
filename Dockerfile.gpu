@@ -26,6 +26,26 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
         python3.10 \
         python3.10-venv \
         python3-pip \
+        # Remotion headless Chrome shared libraries (needed for
+        # @remotion/renderer to launch Chromium headless).
+        libatk1.0-0 \
+        libatk-bridge2.0-0 \
+        libcups2 \
+        libdrm2 \
+        libgbm1 \
+        libnspr4 \
+        libnss3 \
+        libpango-1.0-0 \
+        libpangocairo-1.0-0 \
+        libxcomposite1 \
+        libxdamage1 \
+        libxfixes3 \
+        libxkbcommon0 \
+        libxrandr2 \
+        libasound2 \
+        libgdk-pixbuf2.0-0 \
+        libgtk-3-0 \
+        fonts-liberation \
     && ln -sf /usr/bin/python3.10 /usr/bin/python \
     && mkdir -p /etc/apt/keyrings \
     && curl -fsSL https://deb.nodesource.com/gpgkey/nodesource-repo.gpg.key \
